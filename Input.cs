@@ -5,6 +5,7 @@ namespace TheAdventure;
 public unsafe class Input
 {
     private readonly Sdl _sdl;
+    private readonly byte[] _previousKeyState = new byte[(int)KeyCode.Count];
 
     public EventHandler<(int x, int y)>? OnMouseClick;
 
@@ -13,32 +14,30 @@ public unsafe class Input
         _sdl = sdl;
     }
 
-    public bool IsLeftPressed()
+    public bool IsKeyPressed(KeyCode key)
     {
         ReadOnlySpan<byte> keyboardState = new(_sdl.GetKeyboardState(null), (int)KeyCode.Count);
-        return keyboardState[(int)KeyCode.Left] == 1;
+        return keyboardState[(int)key] == 1;
     }
 
-    public bool IsRightPressed()
+    public bool WasKeyJustPressed(KeyCode key)
     {
         ReadOnlySpan<byte> keyboardState = new(_sdl.GetKeyboardState(null), (int)KeyCode.Count);
-        return keyboardState[(int)KeyCode.Right] == 1;
+        return keyboardState[(int)key] == 1 && _previousKeyState[(int)key] == 0;
     }
 
-    public bool IsUpPressed()
-    {
-        ReadOnlySpan<byte> keyboardState = new(_sdl.GetKeyboardState(null), (int)KeyCode.Count);
-        return keyboardState[(int)KeyCode.Up] == 1;
-    }
-
-    public bool IsDownPressed()
-    {
-        ReadOnlySpan<byte> keyboardState = new(_sdl.GetKeyboardState(null), (int)KeyCode.Count);
-        return keyboardState[(int)KeyCode.Down] == 1;
-    }
+    public bool IsLeftPressed() => IsKeyPressed(KeyCode.Left) || IsKeyPressed(KeyCode.A);
+    public bool IsRightPressed() => IsKeyPressed(KeyCode.Right) || IsKeyPressed(KeyCode.D);
+    public bool IsUpPressed() => IsKeyPressed(KeyCode.Up) || IsKeyPressed(KeyCode.W);
+    public bool IsDownPressed() => IsKeyPressed(KeyCode.Down) || IsKeyPressed(KeyCode.S);
 
     public bool ProcessInput()
     {
+        // Snapshot keyboard state before pumping new events so WasKeyJustPressed
+        // can compare end-of-previous-frame state to current state.
+        var rawState = _sdl.GetKeyboardState(null);
+        new ReadOnlySpan<byte>(rawState, (int)KeyCode.Count).CopyTo(_previousKeyState);
+
         Event ev = new Event();
         while (_sdl.PollEvent(ref ev) != 0)
         {

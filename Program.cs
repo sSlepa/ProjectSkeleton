@@ -16,12 +16,16 @@ public static class Program
         }
 
         using (var gameWindow = new GameWindow(sdl))
+        using (var gameRenderer = new GameRenderer(sdl, gameWindow))
         {
             var input = new Input(sdl);
-            var gameRenderer = new GameRenderer(sdl, gameWindow);
             var engine = new Engine(gameRenderer, input);
 
-            engine.SetupWorld();
+            // The SDL window must be created and pumped on the same (main) thread, so the
+            // game loop stays synchronous. The engine's async setup/shutdown do a one-off
+            // blocking wait here rather than turning Main into an async method that would
+            // resume the loop on a thread-pool thread and leave the window unresponsive.
+            engine.SetupWorldAsync().GetAwaiter().GetResult();
 
             bool quit = false;
             while (!quit)
@@ -29,11 +33,19 @@ public static class Program
                 quit = input.ProcessInput();
                 if (quit) break;
 
+                if (input.IsKeyPressed(KeyCode.Escape))
+                {
+                    quit = true;
+                    break;
+                }
+
                 engine.ProcessFrame();
                 engine.RenderFrame();
 
                 System.Threading.Thread.Sleep(13);
             }
+
+            engine.ShutdownAsync().GetAwaiter().GetResult();
         }
 
         sdl.Quit();

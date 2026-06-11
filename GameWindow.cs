@@ -12,8 +12,8 @@ public unsafe class GameWindow : IDisposable
         _sdl = sdl;
 
         _window = (IntPtr)sdl.CreateWindow(
-            "The Adventure", Sdl.WindowposUndefined, Sdl.WindowposUndefined, 640, 400,
-            (uint)WindowFlags.Resizable | (uint)WindowFlags.AllowHighdpi
+            "Bomberman", Sdl.WindowposUndefined, Sdl.WindowposUndefined, 640, 400,
+            (uint)WindowFlags.AllowHighdpi
         );
 
         if (_window == IntPtr.Zero)
@@ -38,7 +38,6 @@ public unsafe class GameWindow : IDisposable
     public IntPtr CreateRenderer()
     {
         IntPtr renderer = (IntPtr)_sdl.CreateRenderer((Window*)_window, -1, (uint)RendererFlags.Accelerated);
-        _sdl.RenderSetVSync((Renderer*)renderer, 1);
 
         if (renderer == IntPtr.Zero)
         {
@@ -46,6 +45,8 @@ public unsafe class GameWindow : IDisposable
             if (ex != null) throw ex;
             throw new Exception("Failed to create renderer.");
         }
+
+        _sdl.RenderSetVSync((Renderer*)renderer, 1);
 
         return renderer;
     }
